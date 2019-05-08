@@ -6,6 +6,7 @@ class App extends React.Component {
     todos: null,
     todosLoading: true,
     newTodoName: '',
+    somethingIsLoading: false,
   };
 
   render() {
@@ -19,27 +20,55 @@ class App extends React.Component {
         </div>
       );
     }
+
+    let loader = null;
+    if (this.state.somethingIsLoading) {
+      loader = <div style={{ position: 'absolute', left: 400 }}>Loading...</div>;
+    }
+
     return (
       <div>
+        {loader}
+        {/* this.state.somethingIsLoading && <div>Loading...</div> */}
         <ul>
           {this.state.todos.map(todo => {
             return (
-              <li
-                key={todo.id}
-                onClick={() => {
-                  axios
-                    .post('https://dldc-todo-server.herokuapp.com/update', {
-                      id: todo.id,
-                      done: !todo.done,
-                    })
-                    .then(() => {
-                      axios.get('https://dldc-todo-server.herokuapp.com/').then(response => {
-                        this.setState({ todos: response.data });
+              <li key={todo.id}>
+                <span
+                  onClick={() => {
+                    this.setState({ somethingIsLoading: true });
+                    axios
+                      .post('https://dldc-todo-server.herokuapp.com/update', {
+                        id: todo.id,
+                        done: !todo.done,
+                      })
+                      .then(() => {
+                        axios.get('https://dldc-todo-server.herokuapp.com/').then(response => {
+                          this.setState({ todos: response.data, somethingIsLoading: false });
+                        });
                       });
-                    });
-                }}
-              >
-                {todo.done ? '✅' : '🔳'} {todo.name}
+                  }}
+                >
+                  {todo.done ? '✅' : '🔳'} {todo.name}
+                </span>
+                <button
+                  onClick={async () => {
+                    this.setState({ somethingIsLoading: true });
+                    await axios
+                      .post('https://dldc-todo-server.herokuapp.com/delete', {
+                        id: todo.id,
+                      })
+                      .finally(() => {
+                        axios.get('https://dldc-todo-server.herokuapp.com/').then(response => {
+                          this.setState({ todos: response.data, somethingIsLoading: true });
+                        });
+                      });
+                  }}
+                >
+                  <span role="img" aria-label="delete">
+                    ❌
+                  </span>
+                </button>
               </li>
             );
           })}
@@ -51,23 +80,21 @@ class App extends React.Component {
           }}
         />
         <button
-          onClick={() => {
-            axios
-              .post('https://dldc-todo-server.herokuapp.com/create', {
-                name: this.state.newTodoName,
-                done: false,
-              })
-              .then(() => {
-                this.setState({ newTodoName: '' });
-                // await wait(2000);
-                // const createdTodo = response.data;
-                // const todosCopy = [...this.state.todos];
-                // todosCopy.push(createdTodo);
-                // this.setState({ todos: todosCopy });
-                axios.get('https://dldc-todo-server.herokuapp.com/').then(response => {
-                  this.setState({ todos: response.data });
-                });
-              });
+          onClick={async () => {
+            this.setState({ somethingIsLoading: true });
+            const response = await axios.post('https://dldc-todo-server.herokuapp.com/create', {
+              name: this.state.newTodoName,
+              done: false,
+            });
+            this.setState({ newTodoName: '', somethingIsLoading: false });
+            // await wait(2000);
+            const createdTodo = response.data;
+            const todosCopy = [...this.state.todos];
+            todosCopy.push(createdTodo);
+            this.setState({ todos: todosCopy, somethingIsLoading: true });
+            await axios.get('https://dldc-todo-server.herokuapp.com/').then(response => {
+              this.setState({ todos: response.data, somethingIsLoading: false });
+            });
           }}
         >
           Create Todo
