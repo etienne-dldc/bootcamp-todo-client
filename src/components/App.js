@@ -1,12 +1,6 @@
 import React from 'react';
 import axios from 'axios';
 
-const wait = time => {
-  return new Promise(resolve => {
-    window.setTimeout(resolve, time);
-  });
-};
-
 class App extends React.Component {
   state = {
     todos: null,
@@ -30,8 +24,22 @@ class App extends React.Component {
         <ul>
           {this.state.todos.map(todo => {
             return (
-              <li key={todo.id}>
-                {todo.done ? '✅' : '❎'} {todo.name}
+              <li
+                key={todo.id}
+                onClick={() => {
+                  axios
+                    .post('https://dldc-todo-server.herokuapp.com/update', {
+                      id: todo.id,
+                      done: !todo.done,
+                    })
+                    .then(() => {
+                      axios.get('https://dldc-todo-server.herokuapp.com/').then(response => {
+                        this.setState({ todos: response.data });
+                      });
+                    });
+                }}
+              >
+                {todo.done ? '✅' : '🔳'} {todo.name}
               </li>
             );
           })}
@@ -49,7 +57,7 @@ class App extends React.Component {
                 name: this.state.newTodoName,
                 done: false,
               })
-              .then(async response => {
+              .then(() => {
                 this.setState({ newTodoName: '' });
                 // await wait(2000);
                 // const createdTodo = response.data;
@@ -69,7 +77,6 @@ class App extends React.Component {
   }
 
   async componentDidMount() {
-    await wait(2000);
     axios.get('https://dldc-todo-server.herokuapp.com/').then(response => {
       this.setState({ todos: response.data, todosLoading: false });
     });
