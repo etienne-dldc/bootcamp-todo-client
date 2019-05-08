@@ -11,6 +11,7 @@ class App extends React.Component {
   state = {
     todos: null,
     todosLoading: true,
+    newTodoName: '',
   };
 
   render() {
@@ -35,6 +36,34 @@ class App extends React.Component {
             );
           })}
         </ul>
+        <input
+          value={this.state.newTodoName}
+          onChange={event => {
+            this.setState({ newTodoName: event.target.value });
+          }}
+        />
+        <button
+          onClick={() => {
+            axios
+              .post('https://dldc-todo-server.herokuapp.com/create', {
+                name: this.state.newTodoName,
+                done: false,
+              })
+              .then(async response => {
+                this.setState({ newTodoName: '' });
+                // await wait(2000);
+                // const createdTodo = response.data;
+                // const todosCopy = [...this.state.todos];
+                // todosCopy.push(createdTodo);
+                // this.setState({ todos: todosCopy });
+                axios.get('https://dldc-todo-server.herokuapp.com/').then(response => {
+                  this.setState({ todos: response.data });
+                });
+              });
+          }}
+        >
+          Create Todo
+        </button>
       </div>
     );
   }
